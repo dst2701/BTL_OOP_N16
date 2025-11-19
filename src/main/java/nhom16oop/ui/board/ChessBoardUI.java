@@ -134,7 +134,6 @@ public class ChessBoardUI {
         if (tile.getPiece() == null) return;
         currentValidMoves = tile.getPiece().generateValidMoves(tile.getPosition(), boardManager.getChessPieceMap());
 
-        if (controller.getGameMode() == GameMode.AI_VS_AI) return;
         for (ChessMove move : currentValidMoves) {
             if (BoardUtils.isMoveValidUnderCheck(move, boardManager.getChessPieceMap())) {
                 ChessTile endTile = getTile(move.end());

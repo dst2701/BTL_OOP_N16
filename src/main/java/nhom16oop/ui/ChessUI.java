@@ -24,13 +24,31 @@ public class ChessUI {
     /**
      * Constructs a ChessUI with the specified game mode and player color.
      *
-     * @param gameMode      the game mode (e.g., PLAYER_VS_PLAYER, PLAYER_VS_AI, AI_VS_AI)
+     * @param gameMode      the game mode (e.g., PLAYER_VS_PLAYER, PLAYER_VS_AI, PUZZLE_MODE)
      * @param selectedColor the color chosen for the human player in PLAYER_VS_AI mode
      */
     public ChessUI(int gameMode, PieceColor selectedColor) {
         this.chessController = new ChessController();
         configureGame(this.chessController, gameMode, selectedColor);
         this.frame = new JFrame("Chess Game");
+        chessController.setFrame(frame);
+        setupUI();
+    }
+
+
+/**
+ * Constructor cho Puzzle Mode
+ */
+    public ChessUI(int gameMode, PieceColor selectedColor, String puzzleFEN, int maxMoves) {
+        this.chessController = new ChessController();
+        
+        if (gameMode == GameMode.PUZZLE_MODE) {
+            chessController.setPuzzleMode(puzzleFEN, maxMoves);
+        } else {
+            configureGame(this.chessController, gameMode, selectedColor);
+        }
+        
+        this.frame = new JFrame("Chess Game - Puzzle Mode");
         chessController.setFrame(frame);
         setupUI();
     }
@@ -43,7 +61,7 @@ public class ChessUI {
         mainPanel.setBackground(new Color(30, 30, 30));
 
         ChessBoard chessBoard = new ChessBoard(chessController);
-        chessController.setChessBoard(chessBoard); // Äáº·t chessBoard vÃ o ChessController
+        chessController.setChessBoard(chessBoard);
         mainPanel.add(chessBoard, BorderLayout.CENTER);
 
         logger.info("Game mode selected {}", chessController.getGameMode());
@@ -51,11 +69,12 @@ public class ChessUI {
         PlayerPanel whitePlayerPanel;
         PlayerPanel blackPlayerPanel;
         switch (chessController.getGameMode()) {
-            case GameMode.AI_VS_AI -> {
-                whitePlayerPanel = new PlayerPanel("AI", PieceColor.WHITE, "images/stockfish.png", chessController);
-                mainPanel.add(whitePlayerPanel, BorderLayout.WEST);
-                blackPlayerPanel = new PlayerPanel("AI", PieceColor.BLACK, "images/stockfish.png", chessController);
-                mainPanel.add(blackPlayerPanel, BorderLayout.EAST);
+            case GameMode.PUZZLE_MODE -> {
+                PieceColor playerColor = chessController.getHumanPlayerColor();
+                whitePlayerPanel = new PlayerPanel("You", playerColor, "images/player.png", chessController);
+                mainPanel.add(whitePlayerPanel, playerColor.isWhite() ? BorderLayout.WEST : BorderLayout.EAST);
+                blackPlayerPanel = new PlayerPanel("AI", playerColor.isWhite() ? PieceColor.BLACK : PieceColor.WHITE, "images/stockfish.png", chessController);
+                mainPanel.add(blackPlayerPanel, playerColor.isWhite() ? BorderLayout.EAST : BorderLayout.WEST);
             }
             case GameMode.PLAYER_VS_AI -> {
                 PieceColor playerColor = chessController.getHumanPlayerColor();
@@ -76,9 +95,14 @@ public class ChessUI {
             }
         }
 
-        MoveHistoryPanel moveHistoryPanel = new MoveHistoryPanel(chessController);
-        chessController.addHistoryChangeListener(moveHistoryPanel);
-        mainPanel.add(moveHistoryPanel, BorderLayout.NORTH);
+        if (chessController.isPuzzleMode()) {
+            JPanel puzzleInfoPanel = createPuzzleInfoPanel();
+            mainPanel.add(puzzleInfoPanel, BorderLayout.NORTH);
+        } else {
+            MoveHistoryPanel moveHistoryPanel = new MoveHistoryPanel(chessController);
+            chessController.addHistoryChangeListener(moveHistoryPanel);
+            mainPanel.add(moveHistoryPanel, BorderLayout.NORTH);
+        }
 
         ChessToolbar toolbar = new ChessToolbar(chessController, chessController.getBoardUI());
         mainPanel.add(toolbar, BorderLayout.SOUTH);
@@ -106,7 +130,77 @@ public class ChessUI {
         switch (mode) {
             case GameMode.PLAYER_VS_PLAYER -> controller.setPlayerVsPlayer();
             case GameMode.PLAYER_VS_AI -> controller.setPlayerVsAI(playerColor);
-            case GameMode.AI_VS_AI -> controller.setAIVsAI();
+            case GameMode.PUZZLE_MODE-> {}
         }
+    }
+
+        /**
+     * Tạo panel hiển thị thông tin puzzle
+     */
+    private JPanel createPuzzleInfoPanel() {
+        JPanel panel = new JPanel();
+        panel.setOpaque(true);
+        panel.setBackground(new Color(139, 69, 19));
+        panel.setPreferredSize(new Dimension(800, 95));
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20));
+        
+        // Title label
+        JLabel titleLabel = new JLabel("🧩 PUZZLE MODE", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Georgia", Font.BOLD, 22));
+        titleLabel.setForeground(new Color(255, 215, 0));
+        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        // Moves counter label (sẽ update động)
+        JLabel movesLabel = new JLabel("", SwingConstants.CENTER);
+        movesLabel.setFont(new Font("Roboto", Font.BOLD, 18));
+        movesLabel.setForeground(Color.WHITE);
+        movesLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        // Objective label
+        JLabel objectiveLabel = new JLabel("🎯 Mục tiêu: Chiếu hết đối thủ!", SwingConstants.CENTER);
+        objectiveLabel.setFont(new Font("Roboto", Font.PLAIN, 14));
+        objectiveLabel.setForeground(new Color(245, 245, 220));
+        objectiveLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        panel.add(Box.createVerticalGlue());
+        panel.add(titleLabel);
+        panel.add(Box.createVerticalStrut(8));
+        panel.add(movesLabel);
+        panel.add(Box.createVerticalStrut(5));
+        panel.add(objectiveLabel);
+        panel.add(Box.createVerticalGlue());
+        
+        // Update moves label khi game state thay đổi
+        chessController.addGameStateListener(() -> {
+            SwingUtilities.invokeLater(() -> {
+                int remaining = chessController.getPuzzleRemainingMoves();
+                int total = chessController.getPuzzleMaxMoves();
+                int current = chessController.getPuzzleCurrentMoves();
+                
+                movesLabel.setText(String.format("Đã đi: %d/%d  |  Còn lại: %d nước", 
+                                                current, total, remaining));
+                
+                // Đổi màu warning khi sắp hết
+                if (remaining == 0) {
+                    movesLabel.setForeground(new Color(255, 50, 50));
+                } else if (remaining == 1) {
+                    movesLabel.setForeground(new Color(255, 100, 100));
+                } else if (remaining <= 2) {
+                    movesLabel.setForeground(new Color(255, 200, 0));
+                } else {
+                    movesLabel.setForeground(Color.WHITE);
+                }
+            });
+        });
+        
+        // Trigger initial update
+        SwingUtilities.invokeLater(() -> {
+            int remaining = chessController.getPuzzleRemainingMoves();
+            int total = chessController.getPuzzleMaxMoves();
+            movesLabel.setText(String.format("Đã đi: 0/%d  |  Còn lại: %d nước", total, remaining));
+        });
+        
+        return panel;
     }
 }

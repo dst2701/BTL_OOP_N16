@@ -57,6 +57,12 @@ public final class ChessController implements MoveExecutor {
     private ChessTimer chessTimer;
     private boolean timerEnabled = false;
 
+    private String puzzleFEN;
+    private int puzzleMaxMoves;
+    private int puzzleCurrentMoves;
+    private boolean puzzleCompleted;
+    private boolean puzzleFailed;
+
     private final List<PlayerPanelListener> playerPanelListeners = new ArrayList<>();
     private final List<GameStateListener> gameStateListeners = new ArrayList<>();
     private final List<HistoryChangeListener> historyChangeListeners = new ArrayList<>();
@@ -114,15 +120,48 @@ public final class ChessController implements MoveExecutor {
         }
     }
 
+    // THAY THẾ method setAIVsAI() bằng setPuzzleMode()
+
     /**
-     * Sets up an AI vs. AI game mode with two AI players.
+     * Sets up puzzle solving game mode.
+     * @param fen FEN string của thế cờ
+     * @param maxMoves số nước đi tối đa cho phép
      */
-    public void setAIVsAI() {
-        this.gameMode = GameMode.AI_VS_AI;
-        this.whitePlayer = new StockfishPlayer(this, PieceColor.WHITE);
-        this.blackPlayer = new StockfishPlayer(this, PieceColor.BLACK);
+    public void setPuzzleMode(String fen, int maxMoves) {
+        this.gameMode = GameMode.PUZZLE_MODE;
+        this.puzzleFEN = fen;
+        this.puzzleMaxMoves = maxMoves;
+        this.puzzleCurrentMoves = 0;
+        this.puzzleCompleted = false;
+        this.puzzleFailed = false;
+        
+        // Load board từ FEN
+        boardManager.loadFromFEN(fen);
+        boardUI.repaintPieces();
+        
+        // Xác định player color từ FEN (phần thứ 2)
+        String[] parts = fen.split(" ");
+        this.humanPlayerColor = parts.length >= 2 && parts[1].equals("w") 
+            ? PieceColor.WHITE : PieceColor.BLACK;
+        
+        // Setup players
+        if (humanPlayerColor.isWhite()) {
+            this.whitePlayer = new HumanPlayer(this, PieceColor.WHITE);
+            this.blackPlayer = new StockfishPlayer(this, PieceColor.BLACK);
+        } else {
+            this.whitePlayer = new StockfishPlayer(this, PieceColor.WHITE);
+            this.blackPlayer = new HumanPlayer(this, PieceColor.BLACK);
+        }
+        
         notifyGameStateChanged();
-        whitePlayer.makeMove();
+        
+        // Nếu AI đi trước, trigger move
+        // if (humanPlayerColor.isBlack()) {
+        //     whitePlayer.makeMove();
+        // }
+        
+        logger.info("Puzzle mode initialized: MaxMoves={}, PlayerColor={}", 
+                    maxMoves, humanPlayerColor);
     }
 
     /**
@@ -231,6 +270,16 @@ public final class ChessController implements MoveExecutor {
         }
 
         executor.submit(this::checkGameEndConditions);
+
+        // === PUZZLE MODE: Increment moves ===
+        if (gameMode == GameMode.PUZZLE_MODE) {
+            // Chỉ tính nước của người chơi (sau khi switch turn, currentPlayerColor đã là AI)
+            if (currentBoardState.getCurrentPlayerColor() != humanPlayerColor) {
+                puzzleCurrentMoves++;
+                logger.debug("Puzzle move count: {}/{}", puzzleCurrentMoves, puzzleMaxMoves);
+                notifyGameStateChanged(); // Update UI counter
+            }
+        }
 
         return true;
     }
@@ -467,7 +516,7 @@ public final class ChessController implements MoveExecutor {
             Player nextPlayer = boardManager.getCurrentBoardState().getCurrentPlayerColor().isWhite() ? whitePlayer : blackPlayer;
             if (gameMode == GameMode.PLAYER_VS_AI && nextPlayer.getColor() != humanPlayerColor) {
                 nextPlayer.makeMove();
-            } else if (gameMode == GameMode.AI_VS_AI) {
+            } else if (gameMode == GameMode.PUZZLE_MODE) {
                 nextPlayer.makeMove();
             }
         }
@@ -586,6 +635,41 @@ public final class ChessController implements MoveExecutor {
      * Checks for game-ending conditions such as checkmate, stalemate, or draws.
      */
     private void checkGameEndConditions() {
+
+        // === PUZZLE MODE CHECKS ===
+        if (gameMode == GameMode.PUZZLE_MODE) {
+            BoardState currentBoardState = boardManager.getCurrentBoardState();
+            PieceColor opponentColor = humanPlayerColor.getOpponent();
+            
+            // Kiểm tra chiếu hết đối thủ (THẮNG)
+            if (BoardUtils.isCheckmate(opponentColor, boardManager.getChessPieceMap())) {
+                gameEnded = true;
+                puzzleCompleted = true;
+                SwingUtilities.invokeLater(() -> {
+                    GameOverDialog dialog = new GameOverDialog(
+                        frame, 
+                        "Chúc mừng! Bạn đã giải xong puzzle!");
+                    dialog.setVisible(true);
+                });
+                logger.info("Puzzle completed: Checkmate achieved in {} moves", puzzleCurrentMoves);
+                return;
+            }
+            
+            // Kiểm tra hết nước đi (THUA)
+            if (puzzleCurrentMoves >= puzzleMaxMoves) {
+                gameEnded = true;
+                puzzleFailed = true;
+                SwingUtilities.invokeLater(() -> {
+                    GameOverDialog dialog = new GameOverDialog(
+                        frame, 
+                        "Thất bại! Hết " + puzzleMaxMoves + " nước đi mà chưa chiếu hết đối thủ.");
+                    dialog.setVisible(true);
+                });
+                logger.info("Puzzle failed: Out of moves ({}/{})", puzzleCurrentMoves, puzzleMaxMoves);
+                return;
+            }
+        }
+
         BoardState currentBoardState = boardManager.getCurrentBoardState();
 
         if (BoardUtils.isCheckmate(currentBoardState.getCurrentPlayerColor(), boardManager.getChessPieceMap())) {
@@ -756,7 +840,7 @@ public final class ChessController implements MoveExecutor {
     }
 
     public PieceColor getHumanPlayerColor() {
-        if (gameMode == GameMode.PLAYER_VS_AI) {
+        if (gameMode == GameMode.PLAYER_VS_AI || gameMode == GameMode.PUZZLE_MODE) {
             return humanPlayerColor;
         }
         return null;
@@ -781,5 +865,21 @@ public final class ChessController implements MoveExecutor {
 
     public void setGameEnded(boolean gameEnded) {
         this.gameEnded = gameEnded;
+    }
+    // === PUZZLE MODE GETTERS ===
+    public boolean isPuzzleMode() {
+        return gameMode == GameMode.PUZZLE_MODE;
+    }
+
+    public int getPuzzleRemainingMoves() {
+        return Math.max(0, puzzleMaxMoves - puzzleCurrentMoves);
+    }
+
+    public int getPuzzleMaxMoves() {
+        return puzzleMaxMoves;
+    }
+
+    public int getPuzzleCurrentMoves() {
+        return puzzleCurrentMoves;
     }
 }

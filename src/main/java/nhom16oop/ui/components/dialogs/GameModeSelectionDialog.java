@@ -17,6 +17,8 @@ import java.awt.geom.RoundRectangle2D;
 public class GameModeSelectionDialog extends JDialog {
     private int selectedMode = GameMode.PLAYER_VS_PLAYER; // Default mode
     private PieceColor selectedColor = PieceColor.WHITE; // Default color
+    private String selectedPuzzleFEN = null;
+    private int selectedPuzzleMaxMoves = 0;
     private static final int FRAME_WIDTH = 400;
     private static final int FRAME_HEIGHT = 600;
 
@@ -91,8 +93,8 @@ public class GameModeSelectionDialog extends JDialog {
         pvpButton.addActionListener(this::onPlayerVsPlayerSelected);
         JButton pvaiButton = createStyledButton("Player vs Bot");
         pvaiButton.addActionListener(this::onPlayerVsAISelected);
-        JButton aivaiButton = createStyledButton("Bot vs Bot");
-        aivaiButton.addActionListener(this::onAIVsAISelected);
+        JButton puzzleButton = createStyledButton("Puzzle Mode");
+        puzzleButton.addActionListener(this::onPuzzleModeSelected);
 
         buttonPanel.add(Box.createVerticalGlue());
         buttonPanel.add(pvpButton);
@@ -101,8 +103,8 @@ public class GameModeSelectionDialog extends JDialog {
         buttonPanel.add(pvaiButton);
         pvaiButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         buttonPanel.add(Box.createVerticalStrut(30));
-        buttonPanel.add(aivaiButton);
-        aivaiButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        buttonPanel.add(puzzleButton);
+        puzzleButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         buttonPanel.add(Box.createVerticalGlue());
 
         return buttonPanel;
@@ -176,13 +178,74 @@ public class GameModeSelectionDialog extends JDialog {
     }
 
     /**
-     * Handles the selection of AI vs. AI mode.
-     *
-     * @param e the action event
+     * Handles Puzzle Mode selection
+     *  @param e the action event
      */
-    private void onAIVsAISelected(ActionEvent e) {
-        selectedMode = GameMode.AI_VS_AI;
-        dispose();
+    private void onPuzzleModeSelected(ActionEvent e) {
+        selectedMode = GameMode.PUZZLE_MODE;
+        showInlinePuzzleSelection();
+    }
+
+    /**
+     * Hiển thị dialog chọn puzzle
+     */
+    private void showInlinePuzzleSelection() {
+        // Định nghĩa các puzzle mẫu (bạn có thể mở rộng hoặc load từ file)
+        Object[][] puzzles = {
+            {"Puzzle 1 - Dễ", 
+            "r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4", 
+            3},
+            {"Puzzle 2 - Trung bình", 
+            "r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 0 5", 
+            5},
+            {"Puzzle 3 - Khó", 
+            "r2qkb1r/pp2nppp/3p4/2pNN1B1/2BnP3/3P4/PPP2PPP/R2bK2R w KQkq - 1 8", 
+            7},
+            {"Puzzle 4 - Rất khó",
+            "r1bq1rk1/pp2bppp/2n1pn2/3p4/2PP4/2NBPN2/PP3PPP/R1BQ1RK1 w - - 0 9",
+            8}
+        };
+        
+        String[] options = new String[puzzles.length];
+        for (int i = 0; i < puzzles.length; i++) {
+            options[i] = puzzles[i][0] + " (" + puzzles[i][2] + " nước)";
+        }
+        
+        String choice = (String) JOptionPane.showInputDialog(
+            this,
+            "Chọn Puzzle để giải:",
+            "Chọn Puzzle",
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            options,
+            options[0]
+        );
+        
+        if (choice != null) {
+            // Tìm puzzle được chọn
+            for (int i = 0; i < options.length; i++) {
+                if (options[i].equals(choice)) {
+                    selectedPuzzleFEN = (String) puzzles[i][1];
+                    selectedPuzzleMaxMoves = (Integer) puzzles[i][2];
+                    // logger.info("Selected puzzle: {}, FEN: {}, MaxMoves: {}", 
+                    //         puzzles[i][0], selectedPuzzleFEN, selectedPuzzleMaxMoves);
+                    break;
+                }
+            }
+            dispose();
+        } else {
+            // User cancelled, reset to default
+            selectedMode = GameMode.PLAYER_VS_PLAYER;
+        }
+    }
+
+    // Getters cho puzzle info
+    public String getSelectedPuzzleFEN() {
+        return selectedPuzzleFEN;
+    }
+
+    public int getSelectedPuzzleMaxMoves() {
+        return selectedPuzzleMaxMoves;
     }
 
     /**

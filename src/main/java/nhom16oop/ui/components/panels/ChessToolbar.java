@@ -65,7 +65,7 @@ public class ChessToolbar extends JPanel implements GameStateListener {
             if (dialog.isConfirmed()) {
                 actionManager.resignGame();
             }
-        }, () -> chessController.getGameMode() != GameMode.AI_VS_AI && !chessController.isGameEnded()));
+        }, () -> chessController.getGameMode() != GameMode.PUZZLE_MODE && !chessController.isGameEnded()));
 
         buttonConfigs.add(new ButtonConfig("Show hint", "images/hint.png", e -> actionManager.showHint(), () -> chessController.getGameMode() == GameMode.PLAYER_VS_AI && !chessController.isGameEnded()));
 
@@ -151,6 +151,16 @@ public class ChessToolbar extends JPanel implements GameStateListener {
     }
 
     private boolean isButtonEnabled(ButtonConfig config) {
+         if (chessController.isPuzzleMode()) {
+            switch (config.tooltip) {
+                case "Move Back":
+                case "Move Forward":
+                   return false;
+                 default:
+                    break;
+            }
+        }
+
         if (chessController.getHistoryManager() == null) {
             return false;
         }

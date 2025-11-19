@@ -164,4 +164,64 @@ public class BoardManager {
     public Map<BoardState, Integer> getBoardStateHistory() {
         return boardStateHistory;
     }
+
+    // THÊM VÀO CUỐI CLASS BoardManager (trước dấu } cuối cùng)
+
+    /**
+     * Load board state từ FEN string
+     */
+    public void loadFromFEN(String fen) {
+        clear();
+        
+        String[] parts = fen.split(" ");
+        if (parts.length < 4) {
+            throw new IllegalArgumentException("Invalid FEN string: " + fen);
+        }
+        
+        // Parse piece positions (part 1)
+        String[] ranks = parts[0].split("/");
+        for (int rank = 0; rank < 8; rank++) {
+            int col = 0;
+            String rankStr = ranks[7 - rank]; // FEN từ rank 8 xuống rank 1
+            
+            for (char c : rankStr.toCharArray()) {
+                if (Character.isDigit(c)) {
+                    col += Character.getNumericValue(c);
+                } else {
+                    ChessPiece piece = createPieceFromFENChar(c);
+                    if (piece != null) {
+                        setPiece(new ChessPosition(col, rank), piece);
+                    }
+                    col++;
+                }
+            }
+        }
+        
+        // Parse active color (part 2)
+        PieceColor activeColor = parts[1].equals("w") ? PieceColor.WHITE : PieceColor.BLACK;
+        currentBoardState.setCurrentPlayerColor(activeColor);
+        
+        // Parse castling rights (part 3)
+        // En passant (part 4) sẽ tự động update sau move đầu tiên
+        
+        logger.info("Board loaded from FEN: {}", fen);
+    }
+
+    /**
+     * Tạo ChessPiece từ ký tự FEN
+     */
+    private ChessPiece createPieceFromFENChar(char c) {
+        PieceColor color = Character.isUpperCase(c) ? PieceColor.WHITE : PieceColor.BLACK;
+        char piece = Character.toLowerCase(c);
+        
+        return switch (piece) {
+            case 'p' -> new Pawn(color, currentBoardState);
+            case 'n' -> new Knight(color);
+            case 'b' -> new Bishop(color);
+            case 'r' -> new Rook(color);
+            case 'q' -> new Queen(color);
+            case 'k' -> new King(color);
+            default -> null;
+        };
+    }
 }

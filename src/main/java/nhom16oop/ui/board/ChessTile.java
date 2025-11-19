@@ -246,9 +246,13 @@ public class ChessTile extends JPanel {
          * @return True if interaction is blocked, false otherwise.
          */
         private boolean isInteractionBlocked() {
-            if (chessController.isGameEnded() || chessController.getGameMode() == GameMode.AI_VS_AI) {
+            if (chessController.isGameEnded()) {
                 return true;
             }
+
+            if (chessController.isPuzzleMode()) {
+              return chessController.getBoardManager().getCurrentPlayerColor()!= chessController.getHumanPlayerColor();
+    }
 
             return chessController.getGameMode() == GameMode.PLAYER_VS_AI && chessController.getBoardManager().getCurrentPlayerColor() != chessController.getHumanPlayerColor();
         }

@@ -67,13 +67,18 @@ public final class BoardState {
         }
     }
 
-    public  BoardState(String FEN) {
+    public BoardState(String FEN){
         this.chessPieceMap = new ChessPieceMap();
+        this.setFromFEN(FEN);
+    }
+
+    public void setFromFEN(String FEN) {
 
         String[] parts = FEN.split(" ");
         if (parts.length < 4) {
             throw new IllegalArgumentException("Invalid FEN string: " + FEN);
         }
+        chessPieceMap.clear();
         
         // Parse piece positions (part 1)
         String[] ranks = parts[0].split("/");
@@ -105,8 +110,13 @@ public final class BoardState {
         this.blackCanCastleKingside = castlingRights.contains("k");
         this.blackCanCastleQueenside = castlingRights.contains("q");
         // En passant (part 4) sẽ tự động update sau move đầu tiên
-
+        String enPassantNotation = parts[3];
+        enPassantTargetSquare = ChessPosition.get(enPassantNotation);
         
+        // Parse halfmove clock and fullmove number (parts 5 and 6)
+        if(parts.length <6) return;
+        halfmoveClock = Integer.parseInt(parts[4]);
+        fullmoveNumber= Integer.parseInt(parts[4]);
     }
 
     public ChessPieceMap getChessPieceMap() {

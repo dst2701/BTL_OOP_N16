@@ -1,12 +1,40 @@
 package nhom16oop.game;
 
+import javax.swing.JOptionPane;
+
 import nhom16oop.constants.GameMode;
 import nhom16oop.constants.PieceColor;
+import nhom16oop.history.FileManager;
+import nhom16oop.history.GameHistoryManager;
+import nhom16oop.history.GameSave;
 import nhom16oop.ui.ChessUI;
 import nhom16oop.ui.components.dialogs.GameModeSelectionDialog;
 
 public class ChessLauncher {
     public static void launch() {
+        GameSave gs = FileManager.loadLatest();
+    if (gs != null) {
+        int c = JOptionPane.showOptionDialog(null,
+                "Found saved games. Would you like to continue the last saved game or start a new one?",
+                "Resume saved game?",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                new String[]{"Continue last saved", "Start new"},
+                "Continue last saved");
+        if (c == JOptionPane.YES_OPTION) {
+            if (gs != null) {
+                ChessController controller = new ChessController();
+                // controller.setHistoryManager(history); // or pass in constructor
+                gs.applyToController(controller);
+                ChessUI ui = new ChessUI(controller); // you may add a constructor that accepts ChessController directly
+                ui.show();
+                return;
+            }
+        }
+    }
+
+
         GameModeSelectionDialog dialog = new GameModeSelectionDialog(null);
         dialog.setVisible(true);
 

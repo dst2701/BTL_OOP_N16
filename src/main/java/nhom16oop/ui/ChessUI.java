@@ -34,6 +34,12 @@ public class ChessUI {
         chessController.setFrame(frame);
         setupUI();
     }
+    public ChessUI(ChessController chessController) {
+        this.chessController = chessController;
+        this.frame = new JFrame("Chess Game");
+        chessController.setFrame(frame);
+        setupUI();
+    }
 
 
 /**
@@ -43,12 +49,13 @@ public class ChessUI {
         this.chessController = new ChessController();
         
         if (gameMode == GameMode.PUZZLE_MODE) {
+            this.frame = new JFrame("Chess Game - Puzzle Mode");
             chessController.setPuzzleMode(puzzleFEN, maxMoves);
         } else {
+            this.frame = new JFrame("Chess Game");
             configureGame(this.chessController, gameMode, selectedColor);
         }
         
-        this.frame = new JFrame("Chess Game - Puzzle Mode");
         chessController.setFrame(frame);
         setupUI();
     }

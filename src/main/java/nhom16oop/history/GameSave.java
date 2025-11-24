@@ -41,7 +41,7 @@ public class GameSave {
         // apply fen and moves to controller
         try {
             if (fen != null && !fen.isEmpty()) {
-                controller.getBoardManager().loadFromFEN(fen); // implement loadFromFEN if missing
+                controller.getBoardManager().getCurrentBoardState().setFromFEN(fen); // implement loadFromFEN if missing
             }
             // if (movesSerialized != null && !movesSerialized.isEmpty() && controller.getHistoryManager() != null) {
             //     controller.getHistoryManager().loadFromSerialized(movesSerialized);

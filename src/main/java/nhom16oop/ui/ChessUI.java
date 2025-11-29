@@ -235,19 +235,19 @@ public ChessUI(GameSave gameSave) {
         panel.setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20));
         
         // Title label
-        JLabel titleLabel = new JLabel("🧩 PUZZLE MODE", SwingConstants.CENTER);
+        JLabel titleLabel = new JLabel("PUZZLE MODE", SwingConstants.CENTER);
         titleLabel.setFont(new Font("Georgia", Font.BOLD, 22));
         titleLabel.setForeground(new Color(255, 215, 0));
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         
-        // Moves counter label (sẽ update động)
+        // Moves counter label (will be updated dynamically)
         JLabel movesLabel = new JLabel("", SwingConstants.CENTER);
         movesLabel.setFont(new Font("Roboto", Font.BOLD, 18));
         movesLabel.setForeground(Color.WHITE);
         movesLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         
         // Objective label
-        JLabel objectiveLabel = new JLabel("🎯 Mục tiêu: Chiếu hết đối thủ!", SwingConstants.CENTER);
+        JLabel objectiveLabel = new JLabel("Objective: Checkmate the opponent!", SwingConstants.CENTER);
         objectiveLabel.setFont(new Font("Roboto", Font.PLAIN, 14));
         objectiveLabel.setForeground(new Color(245, 245, 220));
         objectiveLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -260,17 +260,17 @@ public ChessUI(GameSave gameSave) {
         panel.add(objectiveLabel);
         panel.add(Box.createVerticalGlue());
         
-        // Update moves label khi game state thay đổi
+        // Update moves label when game state changes
         chessController.addGameStateListener(() -> {
             SwingUtilities.invokeLater(() -> {
                 int remaining = chessController.getPuzzleRemainingMoves();
                 int total = chessController.getPuzzleMaxMoves();
                 int current = chessController.getPuzzleCurrentMoves();
                 
-                movesLabel.setText(String.format("Đã đi: %d/%d  |  Còn lại: %d nước", 
+                movesLabel.setText(String.format("Moves: %d/%d  |  Remaining: %d",
                                                 current, total, remaining));
                 
-                // Đổi màu warning khi sắp hết
+                // Change color warning when running out of moves
                 if (remaining == 0) {
                     movesLabel.setForeground(new Color(255, 50, 50));
                 } else if (remaining == 1) {
@@ -287,7 +287,7 @@ public ChessUI(GameSave gameSave) {
         SwingUtilities.invokeLater(() -> {
             int remaining = chessController.getPuzzleRemainingMoves();
             int total = chessController.getPuzzleMaxMoves();
-            movesLabel.setText(String.format("Đã đi: 0/%d  |  Còn lại: %d nước", total, remaining));
+            movesLabel.setText(String.format("Moves: 0/%d  |  Remaining: %d", total, remaining));
         });
         
         return panel;

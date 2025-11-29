@@ -70,7 +70,7 @@ public class GameModeSelectionDialog extends JDialog {
             protected void paintComponent(Graphics g) {
                 Graphics2D g2d = (Graphics2D) g.create();
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                Image woodTexture = ImageLoader.getImage("images/wood_texture.png", FRAME_WIDTH, FRAME_HEIGHT);
+                Image woodTexture = ImageLoader.getImage("images/black_wall_texture.png", FRAME_WIDTH, FRAME_HEIGHT);
                 g2d.drawImage(woodTexture, 0, 0, getWidth(), getHeight(), this);
                 g2d.setColor(new Color(80, 40, 20));
                 g2d.draw(new RoundRectangle2D.Double(0, 0, getWidth() - 1, getHeight() - 1, 20, 20));
@@ -190,31 +190,31 @@ public class GameModeSelectionDialog extends JDialog {
      * Hiển thị dialog chọn puzzle
      */
     private void showInlinePuzzleSelection() {
-        // Định nghĩa các puzzle mẫu (bạn có thể mở rộng hoặc load từ file)
+        // Define sample puzzles (can be expanded or loaded from file)
         Object[][] puzzles = {
-            {"Puzzle 1 - Dễ", 
-            "r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4", 
+            {"Puzzle 1 - Easy",
+            "r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4",
             3},
-            {"Puzzle 2 - Trung bình", 
-            "r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 0 5", 
+            {"Puzzle 2 - Medium",
+            "r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 0 5",
             5},
-            {"Puzzle 3 - Khó", 
-            "r2qkb1r/pp2nppp/3p4/2pNN1B1/2BnP3/3P4/PPP2PPP/R2bK2R w KQkq - 1 8", 
+            {"Puzzle 3 - Hard",
+            "r2qkb1r/pp2nppp/3p4/2pNN1B1/2BnP3/3P4/PPP2PPP/R2bK2R w KQkq - 1 8",
             7},
-            {"Puzzle 4 - Rất khó",
+            {"Puzzle 4 - Expert",
             "r1bq1rk1/pp2bppp/2n1pn2/3p4/2PP4/2NBPN2/PP3PPP/R1BQ1RK1 w - - 0 9",
             8}
         };
         
         String[] options = new String[puzzles.length];
         for (int i = 0; i < puzzles.length; i++) {
-            options[i] = puzzles[i][0] + " (" + puzzles[i][2] + " nước)";
+            options[i] = puzzles[i][0] + " (" + puzzles[i][2] + " moves)";
         }
         
         String choice = (String) JOptionPane.showInputDialog(
             this,
-            "Chọn Puzzle để giải:",
-            "Chọn Puzzle",
+            "Select a puzzle to solve:",
+            "Choose Puzzle",
             JOptionPane.QUESTION_MESSAGE,
             null,
             options,

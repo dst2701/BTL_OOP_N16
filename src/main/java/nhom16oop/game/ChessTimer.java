@@ -13,6 +13,28 @@ import java.util.List;
  * Handles countdown, pause, resume, and time-out events.
  */
 public class ChessTimer {
+    private boolean timerVisible = true;
+
+    /**
+     * Sets whether the timer UI should be visible.
+     *
+     * @param visible true to show timer, false to hide
+     */
+    public void setTimerVisible(boolean visible) {
+        this.timerVisible = visible;
+        notifyVisibilityChanged(visible);
+        logger.info("Timer visibility set to: {}", visible);
+    }
+
+    /**
+     * Checks if timer UI is visible.
+     *
+     * @return true if timer is visible
+     */
+    public boolean isTimerVisible() {
+        return timerVisible;
+    }
+
     private static final Logger logger = LoggerFactory.getLogger(ChessTimer.class);
 
     private long whiteTimeRemaining; // in milliseconds
@@ -207,6 +229,14 @@ public class ChessTimer {
         });
     }
 
+    private void notifyVisibilityChanged(boolean visible) {
+        SwingUtilities.invokeLater(() -> {
+            for (TimerListener listener : listeners) {
+                listener.onVisibilityChanged(visible);
+            }
+        });
+    }
+
     /**
      * Listener interface for timer events.
      */
@@ -225,6 +255,13 @@ public class ChessTimer {
          * @param color the player's color who ran out of time
          */
         void onTimeOut(PieceColor color);
+
+        /**
+         * Called when timer visibility changes.
+         *
+         * @param visible true if timer should be visible, false otherwise
+         */
+        void onVisibilityChanged(boolean visible);
     }
 }
 

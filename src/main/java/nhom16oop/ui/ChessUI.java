@@ -33,6 +33,11 @@ public class ChessUI {
         this.frame = new JFrame("Chess Game");
         chessController.setFrame(frame);
         setupUI();
+
+        // Hide timer UI after setupUI for Player vs AI mode
+        if (gameMode == GameMode.PLAYER_VS_AI) {
+            chessController.hideTimerUI();
+        }
     }
 
 
@@ -51,6 +56,11 @@ public class ChessUI {
         this.frame = new JFrame("Chess Game - Puzzle Mode");
         chessController.setFrame(frame);
         setupUI();
+
+        // Hide timer UI after setupUI for puzzle mode
+        if (gameMode == GameMode.PUZZLE_MODE) {
+            chessController.hideTimerUI();
+        }
     }
 
     private void setupUI() {

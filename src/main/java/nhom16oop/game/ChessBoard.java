@@ -28,7 +28,7 @@ public class ChessBoard extends JPanel {
     public ChessBoard(ChessController chessController) {
         this.chessController = chessController;
         this.isFlipped = chessController.getGameMode() == GameMode.PLAYER_VS_AI && Objects.requireNonNull(chessController.getHumanPlayerColor()).isBlack();
-        this.boardImage = ImageLoader.getImage("images/chessboard.png", GameConstants.Board.BOARD_WIDTH, GameConstants.Board.BOARD_HEIGHT);
+        this.boardImage = ImageLoader.getImage("images/chessboard2.png", GameConstants.Board.BOARD_WIDTH, GameConstants.Board.BOARD_HEIGHT);
         setPreferredSize(new Dimension(GameConstants.Board.BOARD_WIDTH, GameConstants.Board.BOARD_HEIGHT));
         setOpaque(true);
         setLayout(new GridLayout(8, 8, 0, 0));

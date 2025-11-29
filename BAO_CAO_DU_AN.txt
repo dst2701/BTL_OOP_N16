@@ -1,0 +1,812 @@
+================================================================================
+                    BÁO CÁO DỰ ÁN: CHESS GAME - CỜ VUA
+================================================================================
+
+Nhóm thực hiện: Nhóm 16 OOP
+Ngày hoàn thành: 2025
+Ngôn ngữ lập trình: Java 21
+Build tool: Maven 3.x
+
+================================================================================
+                        1. MÔ TẢ ĐỀ TÀI
+================================================================================
+
+1.1. Tổng Quan
+--------------
+Dự án "Chess Game" là một ứng dụng game cờ vua hoàn chỉnh được xây dựng bằng
+Java, áp dụng các nguyên lý lập trình hướng đối tượng (OOP). Game hỗ trợ nhiều
+chế độ chơi khác nhau bao gồm đối kháng người-người, người-máy, và chế độ
+giải puzzle cờ vua.
+
+1.2. Mục Tiêu
+-------------
+- Xây dựng game cờ vua tuân thủ đầy đủ luật quốc tế FIDE
+- Áp dụng các nguyên lý OOP: Encapsulation, Inheritance, Polymorphism, Abstraction
+- Tích hợp AI engine mạnh mẽ (Stockfish) để chơi với máy
+- Giao diện đồ họa thân thiện, dễ sử dụng
+- Hỗ trợ lưu/tải game, undo/redo nước đi
+- Tích hợp âm thanh và hiệu ứng trực quan
+
+1.3. Phạm Vi Chức Năng
+-----------------------
+- Chơi cờ vua với đầy đủ luật chơi chuẩn
+- 3 chế độ chơi: Player vs Player, Player vs AI, Puzzle Mode
+- Hệ thống đếm thời gian cho mỗi người chơi
+- Hiển thị lịch sử nước đi theo ký hiệu đại số
+- Highlight nước đi hợp lệ và gợi ý
+- Âm thanh cho các hành động (di chuyển, bắt quân, chiếu tướng, etc.)
+- Lưu/tải trạng thái game (JSON format)
+- Hỗ trợ lật bàn cờ (flip board)
+- Phong cấp tốt thành quân khác
+
+================================================================================
+                    2. CHESS ENGINE & CÔNG NGHỆ SỬ DỤNG
+================================================================================
+
+2.1. Chess Engine
+-----------------
+**Stockfish 16**
+- Là một trong những engine cờ vua mạnh nhất thế giới
+- Open source, miễn phí
+- Đánh giá vị trí và đề xuất nước đi tối ưu
+- Hỗ trợ giao thức UCI (Universal Chess Interface)
+
+Stockfish được tích hợp vào project thông qua:
+- File executable: src/main/resources/stockfish.exe (Windows)
+- Class wrapper: nhom16oop.engine.Stockfish.java
+- Giao tiếp qua stdin/stdout sử dụng Process API
+
+2.2. Thư Viện & Dependencies
+-----------------------------
+Project sử dụng Maven để quản lý dependencies:
+
+a) Core Dependencies:
+   - Java SDK: 21 (Java 17+ tương thích)
+   - Maven: 3.x
+
+b) External Libraries:
+
+   | Library | Version | Mục đích |
+   |---------|---------|----------|
+   | Batik (Apache) | 1.17 | Render SVG images |
+   | Batik Transcoder | 1.17 | Convert SVG to raster |
+   | Batik Codec | 1.14 | Image encoding/decoding |
+   | JLayer | 1.0.1 | Phát âm thanh MP3 |
+   | Gson | 2.10.1 | Parse/serialize JSON (save/load) |
+   | SLF4J API | 2.0.7 | Logging framework |
+   | Logback Classic | 1.4.12 | Logging implementation |
+   | Xerces | 2.12.2 | XML parsing |
+   | MySQL Connector | 8.2.0 | Database connection (dự phòng) |
+   | JUnit | 4.13.1 | Unit testing (scope: test) |
+
+c) Build Plugins:
+   - maven-shade-plugin 3.2.4: Đóng gói JAR với dependencies
+   - exec-maven-plugin 3.1.0: Chạy ứng dụng từ Maven
+
+2.3. Kiến Trúc Tổng Thể
+------------------------
+Project tuân theo kiến trúc MVC (Model-View-Controller):
+
+- Model: Các class trong packages core, constants
+- View: Các class trong package ui
+- Controller: Các class trong package game (ChessController, BoardManager)
+
+Cấu trúc package:
+```
+nhom16oop/
+├── ChessGame.java              (Main entry point)
+├── constants/                  (Hằng số: GameMode, PieceColor, GameConstants)
+├── core/
+│   ├── model/                  (BoardState, ChessMove, ChessPiece, ChessPosition)
+│   └── pieces/                 (King, Queen, Rook, Bishop, Knight, Pawn)
+├── engine/                     (Stockfish wrapper)
+├── exception/                  (InvalidMoveException, InvalidPositionException)
+├── game/                       (ChessController, BoardManager, ChessTimer, etc.)
+├── history/                    (GameHistoryManager, FileManager, GameSave)
+├── players/                    (Player interface, HumanPlayer, StockfishPlayer)
+├── ui/
+│   ├── board/                  (ChessTile, ChessBoardUI)
+│   ├── components/
+│   │   ├── dialogs/            (ResignDialog, PromotionDialog, GameOverDialog)
+│   │   └── panels/             (PlayerPanel, ChessToolbar, MoveHistoryPanel)
+│   └── ChessUI.java
+└── utils/                      (ImageLoader, SoundPlayer, ChessNotationUtils)
+```
+
+================================================================================
+                    3. HƯỚNG DẪN BUILD VÀ CHẠY PROJECT
+================================================================================
+
+3.1. Yêu Cầu Hệ Thống
+----------------------
+- Hệ điều hành: Windows, macOS, Linux
+- Java Development Kit (JDK): 17 hoặc cao hơn (khuyến nghị Java 21)
+- Maven: 3.6.0 trở lên
+- RAM: Tối thiểu 4GB (khuyến nghị 8GB)
+- Dung lượng ổ cứng: ~200MB
+
+3.2. Cài Đặt Môi Trường
+------------------------
+Bước 1: Cài đặt JDK
+   - Tải JDK từ https://adoptium.net/ hoặc https://www.oracle.com/java/
+   - Thiết lập biến môi trường JAVA_HOME
+   - Thêm %JAVA_HOME%\bin vào PATH
+
+Bước 2: Cài đặt Maven
+   - Tải Maven từ https://maven.apache.org/download.cgi
+   - Giải nén và thiết lập biến môi trường MAVEN_HOME
+   - Thêm %MAVEN_HOME%\bin vào PATH
+
+Bước 3: Kiểm tra cài đặt
+   Mở terminal/command prompt và chạy:
+   ```
+   java -version
+   mvn -version
+   ```
+
+3.3. Chạy Project Từ Maven (Command Line)
+------------------------------------------
+Cách 1: Compile và chạy trực tiếp
+   ```bash
+   mvn clean compile exec:java
+   ```
+
+Cách 2: Build JAR và chạy
+   ```bash
+   # Build JAR file
+   mvn clean package
+
+   # Chạy JAR (file sẽ ở trong thư mục target/)
+   java -jar target/chess-1.0-SNAPSHOT.jar
+   ```
+
+3.4. Chạy Project Từ IntelliJ IDEA
+-----------------------------------
+Bước 1: Import Project
+   - Mở IntelliJ IDEA
+   - File > Open > Chọn thư mục BTL_OOP_N16
+   - IntelliJ sẽ tự động nhận diện Maven project và download dependencies
+
+Bước 2: Cấu hình JDK
+   - File > Project Structure
+   - Project Settings > Project
+   - Chọn SDK: Java 21 (hoặc 17+)
+
+Bước 3: Build Project
+   - Build > Build Project (Ctrl + F9)
+   - Hoặc Build > Rebuild Project (Ctrl + Shift + F9)
+
+Bước 4: Chạy ứng dụng
+   - Mở file src/main/java/nhom16oop/ChessGame.java
+   - Click chuột phải vào file hoặc vào method main()
+   - Chọn "Run 'ChessGame.main()'" (Shift + F10)
+
+Lưu ý: Có thể cấu hình Run Configuration:
+   - Run > Edit Configurations
+   - Add New > Application
+   - Main class: nhom16oop.ChessGame
+   - Use classpath of module: chess
+
+3.5. Xử Lý Lỗi Thường Gặp
+--------------------------
+Lỗi 1: "Java version mismatch"
+   - Giải pháp: Kiểm tra lại version JDK trong Project Structure
+   - Đảm bảo pom.xml có đúng compiler version (21)
+
+Lỗi 2: "Cannot find stockfish executable"
+   - Giải pháp: Kiểm tra file src/main/resources/stockfish.exe tồn tại
+   - Chạy lại Maven build để copy resources vào target/
+
+Lỗi 3: "Dependencies not found"
+   - Giải pháp: Chạy "mvn clean install" để download lại dependencies
+   - Kiểm tra kết nối internet
+
+Lỗi 4: "Out of Memory"
+   - Giải pháp: Tăng heap size: java -Xmx2G -jar chess.jar
+
+================================================================================
+                    4. CÁC CHỨC NĂNG CHÍNH VÀ NỔI BẬT
+================================================================================
+
+4.1. Hệ Thống Luật Cờ Vua Hoàn Chỉnh
+-------------------------------------
+✓ Tất cả nước đi của 6 loại quân cờ (Vua, Hậu, Xe, Tượng, Mã, Tốt)
+✓ Nước đi đặc biệt:
+  - Nhập thành (Castling): O-O và O-O-O
+  - Bắt tốt qua đường (En passant)
+  - Phong cấp tốt (Pawn promotion)
+✓ Kiểm tra hợp lệ nước đi:
+  - Không để vua bị chiếu sau khi đi
+  - Chặn nước đi khi đang bị chiếu
+  - Pin (quân bị ghim không thể di chuyển)
+✓ Điều kiện kết thúc game:
+  - Chiếu hết (Checkmate)
+  - Hòa cờ (Stalemate)
+  - Hòa do thiếu quân (Insufficient material)
+  - Luật 50 nước đi (Fifty-move rule)
+  - Lặp lại vị trí 3 lần (Threefold repetition)
+
+4.2. Giao Diện Người Dùng (GUI)
+--------------------------------
+✓ Bàn cờ 8x8 với hình ảnh chất lượng cao
+✓ Drag-and-drop để di chuyển quân cờ
+✓ Highlight:
+  - Ô được chọn
+  - Nước đi hợp lệ (chấm tròn trắng cho ô trống, vòng đỏ cho bắt quân)
+  - Nước đi vừa thực hiện (viền màu)
+  - Gợi ý từ AI (highlight xanh)
+✓ Panel thông tin người chơi:
+  - Avatar
+  - Tên người chơi
+  - Đồng hồ đếm ngược
+  - Danh sách quân đã bắt
+  - Điểm số chênh lệch
+✓ Panel lịch sử nước đi:
+  - Hiển thị ký hiệu đại số (algebraic notation)
+  - Scroll qua lại để xem lịch sử
+✓ Toolbar với các nút:
+  - Back (quay lại launcher)
+  - Flip board (lật bàn cờ)
+  - Resign (đầu hàng)
+  - Hint (gợi ý - chỉ ở mode PvAI)
+  - Undo/Redo
+✓ Dialogs:
+  - Chọn chế độ chơi
+  - Chọn màu quân (trắng/đen)
+  - Phong cấp tốt
+  - Xác nhận đầu hàng
+  - Thông báo kết thúc game
+
+4.3. Hệ Thống Âm Thanh
+-----------------------
+✓ Âm thanh cho các sự kiện:
+  - move-self.mp3: Di chuyển quân thường
+  - capture.mp3: Bắt quân
+  - castle.mp3: Nhập thành
+  - move-check.mp3: Chiếu tướng
+  - promote.mp3: Phong cấp
+  - illegal.mp3: Nước đi không hợp lệ
+✓ Preload âm thanh để tránh lag
+✓ Chạy âm thanh trên thread riêng (non-blocking)
+
+4.4. Hệ Thống Save/Load Game
+-----------------------------
+✓ Lưu trạng thái game dưới dạng JSON
+✓ Thông tin lưu trữ:
+  - FEN string (Forsyth-Edwards Notation)
+  - Game mode
+  - Màu đã chọn
+  - Thời gian còn lại của mỗi bên
+  - Timestamp
+✓ Load lại game từ file save
+✓ Thư mục lưu: saves/
+✓ Format tên file: save-[gameMode]-[timestamp].json
+
+4.5. Undo/Redo Nước Đi
+-----------------------
+✓ Undo: Quay lại nước đi trước
+✓ Redo: Tiến tới nước đi đã undo
+✓ Quản lý lịch sử bằng Stack
+✓ Cập nhật UI tương ứng khi undo/redo
+✓ Không cho phép undo/redo khi game đã kết thúc
+
+4.6. Stockfish AI Integration
+------------------------------
+✓ Giao tiếp với engine qua UCI protocol
+✓ Các lệnh UCI:
+  - uci: Khởi tạo engine
+  - isready: Kiểm tra sẵn sàng
+  - position fen: Thiết lập vị trí
+  - go movetime: Tìm nước đi với thời gian giới hạn
+  - stop: Dừng tính toán
+  - quit: Thoát engine
+✓ Chạy engine trên thread riêng để không block UI
+✓ Điều chỉnh độ khó bằng thời gian suy nghĩ
+
+4.7. Hệ Thống Đồng Hồ (Timer)
+------------------------------
+✓ Mỗi người chơi có đồng hồ riêng
+✓ Đếm ngược khi đến lượt
+✓ Tạm dừng khi đối thủ đang suy nghĩ
+✓ Cảnh báo khi còn dưới 30 giây (chữ đỏ)
+✓ Tự động thua khi hết giờ
+✓ Có thể ẩn/hiện timer cho từng mode
+
+4.8. FEN (Forsyth-Edwards Notation) Support
+--------------------------------------------
+✓ Import trạng thái bàn cờ từ FEN string
+✓ Export trạng thái bàn cờ ra FEN string
+✓ Sử dụng trong:
+  - Save/Load game
+  - Puzzle mode
+  - Communication với Stockfish
+
+================================================================================
+                    5. CHI TIẾT CÁC CHẾ ĐỘ CHƠI
+================================================================================
+
+5.1. Player vs Player (PvP)
+----------------------------
+Mô tả:
+  Hai người chơi đối kháng trực tiếp trên cùng một máy tính.
+
+Tính năng:
+  ✓ Luân phiên di chuyển quân cờ
+  ✓ Đồng hồ đếm thời gian cho mỗi người
+  ✓ Highlight ô được chọn và nước đi hợp lệ
+  ✓ Hiển thị lịch sử nước đi
+  ✓ Âm thanh cho mỗi hành động
+  ✓ Lưu/tải game
+  ✓ Undo/Redo nước đi
+  ✓ Lật bàn cờ (flip board)
+  ✓ Đầu hàng (resign)
+
+Luật chơi:
+  - Trắng đi trước
+  - Mỗi người có 5 phút (300 giây)
+  - Hết giờ = thua
+  - Có thể đầu hàng bất cứ lúc nào
+
+Cách sử dụng:
+  1. Chọn "Player vs Player" từ menu
+  2. Bắt đầu chơi
+  3. Click vào quân cờ để chọn, click vào ô đích để di chuyển
+  4. Hoặc drag-and-drop quân cờ
+
+5.2. Player vs AI (PvAI)
+------------------------
+Mô tả:
+  Người chơi đối kháng với máy tính (Stockfish AI).
+
+Tính năng:
+  ✓ Tất cả tính năng của PvP
+  ✓ Chọn màu quân (trắng hoặc đen)
+  ✓ Gợi ý nước đi từ AI (Hint button)
+  ✓ AI tự động đi khi đến lượt
+  ✓ Độ mạnh AI điều chỉnh được (qua thời gian suy nghĩ)
+
+Stockfish Settings:
+  - Skill level: Maximum (mặc định)
+  - Think time: 1000ms (1 giây)
+  - Search depth: Tự động điều chỉnh theo thời gian
+
+Cách sử dụng:
+  1. Chọn "Player vs Bot" từ menu
+  2. Chọn màu quân (White/Black)
+  3. Nếu chọn đen, AI sẽ đi trước
+  4. Click "Hint" để nhận gợi ý nước đi tốt nhất
+  5. Chơi như bình thường
+
+Lưu ý:
+  - Timer UI có thể ẩn trong mode này (tuỳ cấu hình)
+  - Hint chỉ available khi đến lượt người chơi
+
+5.3. Puzzle Mode
+----------------
+Mô tả:
+  Giải các bài toán cờ vua (chess puzzles) với mục tiêu cụ thể.
+
+Đặc điểm:
+  ✓ Bắt đầu từ một vị trí FEN cho trước
+  ✓ Có số nước đi tối đa để hoàn thành
+  ✓ Hiển thị mục tiêu (objective)
+  ✓ Không có đồng hồ đếm thời gian
+  ✓ Có nút resign để thoát puzzle
+  ✓ Tự động kiểm tra khi đạt mục tiêu
+
+Danh sách Puzzles:
+  1. Puzzle 1 - Dễ:
+     - FEN: r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4
+     - Max moves: 3
+     - Objective: Chiếu hết trong 3 nước (Scholar's Mate)
+
+  2. Puzzle 2 - Trung bình:
+     - FEN: r1bqk2r/ppp2ppp/2np1n2/2b1p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 0 6
+     - Max moves: 5
+     - Objective: Bắt quân tốt và chiếm ưu thế
+
+  3. Puzzle 3 - Khó:
+     - FEN: r1bqkbnr/pppp1Qpp/2n5/4p3/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 0 4
+     - Max moves: 4
+     - Objective: Chiếu hết ngay lập tức
+
+  4. Puzzle 4 - Rất khó:
+     - FEN: r2qkb1r/pp2nppp/3p4/2pNN1B1/2BnP3/3P4/PPP2PPP/R2bK2R w KQkq - 1 11
+     - Max moves: 6
+     - Objective: Tìm chuỗi chiếu tướng dẫn đến thắng
+
+Cách sử dụng:
+  1. Chọn "Puzzle Mode" từ menu
+  2. Chọn một puzzle từ danh sách
+  3. Đọc objective để biết mục tiêu
+  4. Giải puzzle trong số nước tối đa
+  5. Game tự động kết thúc khi:
+     - Đạt mục tiêu (thắng)
+     - Hết số nước (thua)
+     - Nhấn resign
+
+UI đặc biệt:
+  - Hiển thị thông tin puzzle ở góc (title, moves, objective)
+  - Không có timer UI
+  - Có nút resign để thoát
+
+================================================================================
+                    6. CẤU TRÚC DỮ LIỆU & THUẬT TOÁN
+================================================================================
+
+6.1. Biểu Diễn Bàn Cờ
+----------------------
+Sử dụng mảng 2D (8x8) để lưu trữ quân cờ:
+  - BoardState.board: ChessPiece[8][8]
+  - null = ô trống
+  - Tọa độ: (row, col) với (0,0) là a8, (7,7) là h1
+
+6.2. Hệ Thống Tọa Độ
+---------------------
+Hai hệ tọa độ:
+  1. Array indices: (row, col) từ 0-7
+  2. Chess notation: "a1" đến "h8"
+
+Chuyển đổi:
+  - toChessNotation(): (row, col) -> "e4"
+  - fromChessNotation(): "e4" -> (row, col)
+
+6.3. Thuật Toán Tìm Nước Đi Hợp Lệ
+-----------------------------------
+Mỗi loại quân có method getPossibleMoves():
+  1. Tạo danh sách nước đi theo luật di chuyển
+  2. Loại bỏ nước đi ra ngoài bàn cờ
+  3. Loại bỏ nước đi bắt quân cùng màu
+  4. Kiểm tra nước đi đặc biệt (castling, en passant)
+
+Validation bởi BoardManager:
+  - isValidMove(): Kiểm tra tổng thể
+  - Simulate nước đi tạm thời
+  - Kiểm tra vua có bị chiếu sau nước đi không
+  - Rollback nếu không hợp lệ
+
+6.4. Thuật Toán Kiểm Tra Chiếu/Chiếu Hết
+------------------------------------------
+isInCheck():
+  1. Tìm vị trí vua
+  2. Kiểm tra tất cả quân địch
+  3. Xem có quân nào tấn công được vua không
+
+isCheckmate():
+  1. Kiểm tra đang bị chiếu
+  2. Lặp qua tất cả quân của mình
+  3. Thử tất cả nước đi hợp lệ
+  4. Nếu không có nước nào thoát chiếu -> chiếu hết
+
+6.5. Thuật Toán AI (Stockfish)
+-------------------------------
+Giao tiếp qua UCI protocol:
+  1. Gửi vị trí hiện tại (FEN)
+  2. Yêu cầu tìm nước đi (go movetime 1000)
+  3. Nhận kết quả (bestmove e2e4)
+  4. Parse và thực hiện nước đi
+
+Stockfish sử dụng:
+  - Alpha-beta pruning
+  - Minimax search
+  - Evaluation function phức tạp
+  - Opening book & endgame tablebase
+
+================================================================================
+                    7. DESIGN PATTERNS ÁP DỤNG
+================================================================================
+
+7.1. MVC (Model-View-Controller)
+---------------------------------
+- Model: BoardState, ChessPiece, ChessMove
+- View: ChessUI, ChessBoardUI, ChessTile, Panels, Dialogs
+- Controller: ChessController, BoardManager, GameActionManager
+
+7.2. Singleton Pattern
+----------------------
+- ImageLoader: Cache hình ảnh toàn cục
+- SoundPlayer: Quản lý âm thanh tập trung
+
+7.3. Factory Pattern
+--------------------
+- ChessPieceMap: Tạo quân cờ dựa trên ký tự FEN
+- Dialog factories: Tạo các dialog chuẩn
+
+7.4. Observer Pattern
+---------------------
+- GameStateListener: Lắng nghe thay đổi trạng thái game
+- HistoryChangeListener: Lắng nghe thay đổi lịch sử
+- PlayerPanelListener: Lắng nghe sự kiện từ panel người chơi
+
+7.5. Strategy Pattern
+---------------------
+- Player interface: HumanPlayer, StockfishPlayer
+- Các loại quân cờ: King, Queen, Rook, Bishop, Knight, Pawn
+
+7.6. Command Pattern
+--------------------
+- ChessMove: Encapsulate nước đi
+- GameHistoryManager: Undo/Redo stack
+
+================================================================================
+                    8. ĐIỂM NỔI BẬT CỦA PROJECT
+================================================================================
+
+8.1. Điểm Mạnh
+--------------
+✓ Áp dụng đầy đủ nguyên lý OOP
+✓ Code structure rõ ràng, dễ maintain
+✓ Tích hợp AI mạnh mẽ (Stockfish)
+✓ GUI đẹp, trực quan, dễ sử dụng
+✓ Hỗ trợ đầy đủ luật cờ vua quốc tế
+✓ Có âm thanh và hiệu ứng
+✓ Save/Load game
+✓ Nhiều chế độ chơi
+✓ Có puzzle mode để luyện tập
+✓ Undo/Redo nước đi
+✓ Hint từ AI
+✓ Documentation đầy đủ (Javadoc)
+✓ Logging system (SLF4J + Logback)
+
+8.2. Tính Năng Độc Đáo
+-----------------------
+1. Flip Board: Lật bàn cờ để xem từ góc độ khác
+2. Highlight System: 4 loại highlight khác nhau
+3. Visual Feedback: Viền màu cho nước đi vừa thực hiện
+4. Sound System: Âm thanh cho mọi action
+5. Timer Warning: Cảnh báo khi còn 30 giây
+6. Captured Pieces Display: Hiển thị quân đã bắt với điểm số
+7. Move History Panel: Xem lại toàn bộ lịch sử
+8. Puzzle Mode: Luyện tập với các bài toán
+
+8.3. Khả Năng Mở Rộng
+----------------------
+✓ Dễ dàng thêm chế độ chơi mới
+✓ Có thể tích hợp database để lưu trữ
+✓ Có thể thêm multiplayer online
+✓ Có thể thêm nhiều puzzle hơn
+✓ Có thể custom UI theme dễ dàng
+✓ Có thể điều chỉnh độ khó AI
+✓ Có thể thêm opening book
+✓ Có thể tích hợp analysis board
+
+================================================================================
+                    9. HƯỚNG DẪN CUSTOMIZE & MODIFY
+================================================================================
+
+9.1. Thay Đổi Hình Ảnh
+----------------------
+Xem chi tiết trong file: IMAGE_MODIFICATION_GUIDE.md
+
+Tóm tắt:
+- Thay hình trong src/main/resources/images/
+- Hệ thống tự động scale về kích thước phù hợp
+- Rebuild project sau khi thay
+
+9.2. Thay Đổi Màu Sắc UI
+-------------------------
+Xem chi tiết trong file: IMAGE_MODIFICATION_GUIDE.md
+
+Các file cần sửa:
+- ChessTile.java: Highlight, indicators
+- PlayerPanel.java: Gradient, fonts
+- ChessToolbar.java: Background
+- Dialogs: Background, buttons
+
+9.3. Thay Đổi Luật Di Chuyển Quân Cờ
+--------------------------------------
+Xem chi tiết trong file: MODIFICATION_GUIDE.md
+
+Ví dụ: Thay đổi King đi như Queen:
+  1. Mở file: core/pieces/King.java
+  2. Tìm method: getPossibleMoves()
+  3. Comment logic cũ
+  4. Copy logic từ Queen.java
+  5. Test lại
+
+9.4. Thêm Puzzle Mới
+--------------------
+File: GameModeSelectionDialog.java
+
+Thêm vào mảng puzzles:
+```java
+{"Puzzle 5 - Tên",
+ "FEN_STRING",
+ MAX_MOVES,
+ "Objective"}
+```
+
+9.5. Ẩn/Hiện Timer
+------------------
+Xem chi tiết trong file: MODIFICATION_GUIDE.md
+
+Trong ChessController.java:
+- Gọi hideTimerUI() để ẩn
+- Comment dòng này để hiện
+
+9.6. Thêm/Bỏ Nút Toolbar
+-------------------------
+File: ChessToolbar.java
+
+Comment dòng buttonConfigs.add(...) để bỏ nút
+Uncomment để hiện lại
+
+================================================================================
+                    10. TESTING & QUALITY ASSURANCE
+================================================================================
+
+10.1. Unit Tests
+----------------
+- Framework: JUnit 4.13.1
+- Scope: test only
+- Coverage: Core logic (ChessPiece, BoardState, ChessMove)
+
+10.2. Manual Testing Checklist
+-------------------------------
+□ Tất cả nước đi của 6 loại quân
+□ Castling (cả O-O và O-O-O)
+□ En passant
+□ Pawn promotion
+□ Check/Checkmate detection
+□ Stalemate detection
+□ Undo/Redo
+□ Save/Load game
+□ Timer functionality
+□ Sound effects
+□ AI moves (Stockfish)
+□ Hint system
+□ Flip board
+□ Puzzle mode
+□ Game over dialogs
+
+10.3. Known Issues & Limitations
+---------------------------------
+- Stockfish chỉ hỗ trợ Windows (cần compile cho macOS/Linux)
+- Timer không chạy trong Puzzle mode (design choice)
+- Không hỗ trợ multiplayer online
+- Không có analysis board
+- Không có opening book riêng (dùng của Stockfish)
+
+================================================================================
+                    11. TÀI LIỆU THAM KHẢO
+================================================================================
+
+11.1. Luật Cờ Vua
+-----------------
+- FIDE Laws of Chess: https://www.fide.com/laws-of-chess
+- Chess Programming Wiki: https://www.chessprogramming.org/
+
+11.2. Stockfish Engine
+----------------------
+- Official Repository: https://github.com/official-stockfish/stockfish
+- UCI Protocol: https://www.chessprogramming.org/UCI
+
+11.3. Java Libraries
+--------------------
+- Apache Batik: https://xmlgraphics.apache.org/batik/
+- Gson: https://github.com/google/gson
+- SLF4J: https://www.slf4j.org/
+- Logback: https://logback.qos.ch/
+
+11.4. Design Patterns
+---------------------
+- Gang of Four: Design Patterns
+- Head First Design Patterns
+
+================================================================================
+                    12. THÔNG TIN LIÊN HỆ & HỖ TRỢ
+================================================================================
+
+Package name: nhom16oop
+Main class: nhom16oop.ChessGame
+Repository: [Thêm link GitHub nếu có]
+
+Để báo lỗi hoặc đóng góp:
+- Tạo issue trên GitHub
+- Hoặc liên hệ qua email team
+
+================================================================================
+                    13. CHANGELOG & VERSION HISTORY
+================================================================================
+
+Version 1.0-SNAPSHOT (2025)
+---------------------------
+- Initial release
+- 3 game modes: PvP, PvAI, Puzzle
+- Stockfish integration
+- Save/Load game
+- Undo/Redo
+- Sound effects
+- Complete chess rules
+- Timer system
+- GUI with Swing
+
+Future Plans (Version 2.0):
+---------------------------
+- Online multiplayer
+- More puzzles
+- Opening book
+- Analysis board
+- Tournament mode
+- Rating system
+- Mobile version
+
+================================================================================
+                    KẾT LUẬN
+================================================================================
+
+Dự án "Chess Game" là một ứng dụng cờ vua hoàn chỉnh, áp dụng đầy đủ các
+nguyên lý lập trình hướng đối tượng. Project được xây dựng với cấu trúc code
+rõ ràng, dễ maintain và mở rộng.
+
+Điểm nổi bật của dự án là việc tích hợp thành công Stockfish AI engine, tạo
+ra trải nghiệm chơi với máy tính thú vị. Giao diện đồ họa được thiết kế đẹp
+mắt, trực quan, kèm theo âm thanh và hiệu ứng sinh động.
+
+Project có thể được sử dụng để:
+- Chơi cờ vua giải trí
+- Luyện tập kỹ năng thông qua puzzle mode
+- Học tập về OOP và design patterns
+- Làm cơ sở cho các dự án mở rộng
+
+Với tài liệu hướng dẫn đầy đủ, project dễ dàng build, chạy và customize theo
+nhu cầu người dùng.
+
+================================================================================
+                    PHỤ LỤC
+================================================================================
+
+A. Danh Sách File Quan Trọng
+-----------------------------
+- README.md: Hướng dẫn cơ bản
+- MODIFICATION_GUIDE.md: Hướng dẫn modify code chi tiết
+- IMAGE_MODIFICATION_GUIDE.md: Hướng dẫn thay đổi UI & hình ảnh
+- pom.xml: Maven configuration
+- logback.xml: Logging configuration
+
+B. Cấu Trúc Thư Mục Resources
+------------------------------
+src/main/resources/
+├── images/
+│   ├── chessboard.png
+│   ├── wood_texture.png
+│   ├── pieces/
+│   │   ├── white_*.png (6 files)
+│   │   └── black_*.png (6 files)
+│   └── [icons].png
+├── sounds/
+│   ├── capture.mp3
+│   ├── castle.mp3
+│   ├── illegal.mp3
+│   ├── move-check.mp3
+│   ├── move-self.mp3
+│   └── promote.mp3
+├── stockfish.exe
+└── logback.xml
+
+C. Maven Commands Cheat Sheet
+------------------------------
+mvn clean                  - Xóa thư mục target
+mvn compile                - Compile source code
+mvn package                - Build JAR file
+mvn exec:java              - Chạy ứng dụng
+mvn clean package          - Clean + build
+mvn clean compile exec:java - Clean + compile + run
+mvn dependency:tree        - Xem dependency tree
+
+D. IntelliJ Shortcuts
+----------------------
+Ctrl + F9                  - Build project
+Shift + F10                - Run application
+Ctrl + Shift + F9          - Rebuild project
+Alt + Shift + F10          - Run with configuration
+Ctrl + Shift + A           - Find action
+
+================================================================================
+                    HẾT BÁO CÁO
+================================================================================
+
+Ngày tạo báo cáo: 29/11/2025
+Tổng số trang: [Auto-calculated]
+Tổng số dòng: [Auto-calculated]
+

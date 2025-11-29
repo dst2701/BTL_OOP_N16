@@ -902,7 +902,7 @@ public final class ChessController implements MoveExecutor {
         GameSave s = new GameSave();
         s.gameMode = this.getGameMode();
         s.timestamp = Instant.now().toEpochMilli();
-        s.name = "save-" + s.timestamp;
+        s.name = "save-" + gameMode+ "-" + s.timestamp;
 
         s.chosenWhite = this.humanPlayerColor == PieceColor.WHITE;
         try {

@@ -11,7 +11,11 @@ import nhom16oop.ui.components.dialogs.GameModeSelectionDialog;
 
 public class ChessLauncher {
     public static void launch() {
-        GameSave gs = FileManager.loadLatest();
+        GameModeSelectionDialog dialog = new GameModeSelectionDialog(null);
+        dialog.setVisible(true);
+
+        int selectedMode = dialog.getSelectedMode();
+        GameSave gs = FileManager.loadLastestFromMode(selectedMode);
         if (gs != null) {
             int c = JOptionPane.showOptionDialog(null,
                     "Found saved games. Would you like to continue the last saved game or start a new one?",
@@ -29,12 +33,6 @@ public class ChessLauncher {
                 }
             }
         }
-
-
-        GameModeSelectionDialog dialog = new GameModeSelectionDialog(null);
-        dialog.setVisible(true);
-
-        int selectedMode = dialog.getSelectedMode();
         PieceColor selectedColor = dialog.getSelectedColor();
 
         if (selectedMode == GameMode.PUZZLE_MODE) {

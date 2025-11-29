@@ -1,13 +1,6 @@
 package nhom16oop.history;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-// public class GameSave {
-//     // private String id;
-//     private String name;
-//     private String fen; // store board as FEN if you have FEN utils
-//     public int gameMode;
-//     // private String movesSerialized; // optional: list of moves (e.g., algebraic or SAN)
-//     private long timestamp;
 
 public class FileManager {
     private static final String SAVE_DIR = "saves"; // relative to working dir
@@ -56,6 +49,37 @@ public class FileManager {
                 byte[] bytes = java.nio.file.Files.readAllBytes(latest.get());
                 String json = new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
                 return GSON.fromJson(json, GameSave.class);
+            }
+        } catch (java.io.IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+    static public GameSave loadLastestFromMode(int gameMode) {
+        // s.name = "save-" + gameMode+ "-" + s.timestamp;
+        try {
+            java.nio.file.Path dir = java.nio.file.Paths.get(SAVE_DIR);
+            if (!java.nio.file.Files.exists(dir) || !java.nio.file.Files.isDirectory(dir)) {
+                return null;
+            }
+            try (java.util.stream.Stream<java.nio.file.Path> stream = java.nio.file.Files.list(dir)) {
+                java.util.Optional<GameSave> latest = stream
+                    .filter(p -> p.toString().toLowerCase().endsWith(".json"))
+                    .filter(p -> java.nio.file.Files.isRegularFile(p))
+                    .map(p -> {
+                        try {
+                            byte[] bytes = java.nio.file.Files.readAllBytes(p);
+                            String json = new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
+                            return GSON.fromJson(json, GameSave.class);
+                        } catch (java.io.IOException | com.google.gson.JsonSyntaxException ex) {
+                            return null;
+                        }
+                    })
+                    .filter(java.util.Objects::nonNull)
+                    .filter(gs -> gs.gameMode == gameMode)
+                    .max((a, b) -> Long.compare(a.timestamp, b.timestamp));
+
+                return latest.orElse(null);
             }
         } catch (java.io.IOException e) {
             e.printStackTrace();
